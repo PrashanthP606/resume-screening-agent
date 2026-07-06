@@ -1,0 +1,23 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Database / temporary storage
+temp_uploads/
+
+# Environments & sensitive files
+.env
+.env.private
+
+# Test and coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.pytest_cache/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
