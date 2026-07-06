@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TalentAI - Intelligent Resume Screening Agent</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- ChartJS for candidate radar/comparison charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="stars-bg"></div>
+    <div class="glowing-orb orb-1"></div>
+    <div class="glowing-orb orb-2"></div>
+
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="logo-area">
+                <div class="logo-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                <div class="logo-text">
+                    <h1>TalentAI</h1>
+                    <span class="tagline">Next-Gen Resume Screening Agent</span>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button id="btn-toggle-settings" class="btn btn-secondary btn-icon-only" title="API Settings">
+                    <i class="fa-solid fa-gear"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- API Settings Panel (Collapsible) -->
+        <section id="settings-panel" class="settings-panel glass-panel hidden">
+            <div class="panel-header">
+                <h3><i class="fa-solid fa-key"></i> Gemini API Configuration</h3>
+                <p>Provide your Google AI Studio API key. The key is stored safely in your browser session.</p>
+            </div>
+            <div class="panel-body">
+                <div class="input-group">
+                    <label for="input-api-key">Gemini API Key</label>
+                    <div class="input-with-button">
+                        <input type="password" id="input-api-key" placeholder="AIzaSy..." autocomplete="off">
+                        <button id="btn-toggle-key-visibility" class="btn btn-icon-only" type="button">
+                            <i class="fa-solid fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="settings-actions">
+                    <button id="btn-validate-key" class="btn btn-secondary">
+                        <i class="fa-solid fa-circle-check"></i> Validate Key
+                    </button>
+                    <button id="btn-save-key" class="btn btn-primary">
+                        <i class="fa-solid fa-floppy-disk"></i> Save Key
+                    </button>
+                </div>
+                <div id="key-status-msg" class="status-msg"></div>
+            </div>
+        </section>
+
+        <!-- Main Grid Layout -->
+        <main class="main-grid">
+            
+            <!-- Left Side: Inputs (JD & File Upload) -->
+            <div class="grid-left-col">
+                
+                <!-- Job Description Input -->
+                <section class="glass-panel card-jd">
+                    <div class="card-header">
+                        <h2><i class="fa-solid fa-briefcase"></i> 1. Job Description</h2>
+                        <div class="template-selector">
+                            <label for="select-template">Template:</label>
+                            <select id="select-template">
+                                <option value="">-- Select Template --</option>
+                                <option value="software-engineer">Python Backend Engineer</option>
+                                <option value="frontend-developer">React Frontend Engineer</option>
+                                <option value="data-scientist">Data Scientist / ML Engineer</option>
+                                <option value="product-manager">Technical Product Manager</option>
+                                <option value="ux-designer">Senior Product Designer</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="card-body">
+                        <div class="input-group">
+                            <input type="text" id="input-jd-title" placeholder="Job Title (e.g. Senior Python Developer)" class="input-title">
+                        </div>
+                        <div class="input-group">
+                            <textarea id="textarea-jd-desc" placeholder="Paste the job requirements, experience criteria, required skills, and qualifications here..." rows="8"></textarea>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Resumes Upload & Screening Trigger -->
+                <section class="glass-panel card-upload">
+                    <div class="card-header">
+                        <h2><i class="fa-solid fa-file-arrow-up"></i> 2. Upload Resumes</h2>
+                        <span class="file-limits">PDF, DOCX, TXT (up to 15 files)</span>
+                    </div>
+                    
+                    <div class="card-body">
+                        <!-- Dropzone -->
+                        <div id="dropzone" class="dropzone">
+                            <i class="fa-solid fa-cloud-arrow-up drop-icon"></i>
+                            <p class="drop-text-primary">Drag & drop candidate resumes here</p>
+                            <p class="drop-text-secondary">or click to browse from files</p>
+                            <input type="file" id="file-input" multiple accept=".pdf,.docx,.txt" class="hidden-file-input">
+                        </div>
+
+                        <!-- Selected Files list -->
+                        <div id="selected-files-container" class="selected-files-container hidden">
+                            <h4>Selected Resumes (<span id="selected-count">0</span>)</h4>
+                            <ul id="selected-files-list" class="selected-files-list"></ul>
+                        </div>
+
+                        <!-- Action Button -->
+                        <div class="action-bar">
+                            <button id="btn-start-screening" class="btn btn-primary btn-large btn-glow" disabled>
+                                <i class="fa-solid fa-circle-play"></i> Screen Candidates
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Agent Screening Console -->
+                <section class="glass-panel card-console">
+                    <div class="card-header">
+                        <h2><i class="fa-solid fa-terminal"></i> Agent Activity Log</h2>
+                        <button id="btn-clear-console" class="btn btn-link btn-xs">Clear</button>
+                    </div>
+                    <div class="card-body">
+                        <div id="console-output" class="console-output">
+                            <div class="console-line system"><i class="fa-solid fa-chevron-right"></i> TalentAI Agent Initialized. Ready for screening...</div>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+
+            <!-- Right Side: Screening Results & Analytics -->
+            <div class="grid-right-col">
+                
+                <!-- Results Loading Placeholder -->
+                <div id="results-placeholder" class="results-placeholder glass-panel">
+                    <div class="placeholder-content">
+                        <div class="placeholder-icon-anim">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        </div>
+                        <h3>Awaiting Input</h3>
+                        <p>Configure your Job Description, upload candidate resumes, and click <strong>"Screen Candidates"</strong> to launch the AI ranking agent.</p>
+                    </div>
+                </div>
+
+                <!-- Active Screening Loader -->
+                <div id="screening-loader" class="results-placeholder glass-panel hidden">
+                    <div class="placeholder-content">
+                        <div class="spinner"></div>
+                        <h3>Agent Screening In Progress...</h3>
+                        <p>The AI Agent is parsing text, computing semantic embeddings, and performing LLM evaluation for each candidate. Please stand by.</p>
+                        <div class="progress-bar-container">
+                            <div id="screening-progress" class="progress-bar-fill" style="width: 0%"></div>
+                        </div>
+                        <span id="screening-progress-text">0% Completed</span>
+                    </div>
+                </div>
+
+                <!-- Results Output Panel -->
+                <div id="results-panel" class="hidden-panel-container hidden">
+                    
+                    <!-- Analytics Header -->
+                    <section class="glass-panel card-analytics">
+                        <div class="analytics-metrics">
+                            <div class="metric-card">
+                                <span class="metric-label">Total Screened</span>
+                                <span id="metric-total" class="metric-value">0</span>
+                            </div>
+                            <div class="metric-card highlight-metric">
+                                <span class="metric-label">Top Candidate</span>
+                                <span id="metric-top-name" class="metric-value">-</span>
+                            </div>
+                            <div class="metric-card">
+                                <span class="metric-label">Avg. Match Score</span>
+                                <span id="metric-avg-score" class="metric-value">0%</span>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Shortlist Rankings -->
+                    <section class="glass-panel card-rankings">
+                        <div class="card-header">
+                            <h2><i class="fa-solid fa-list-ol"></i> Candidate Shortlist</h2>
+                            <div class="export-actions">
+                                <button id="btn-export-csv" class="btn btn-secondary btn-xs"><i class="fa-solid fa-file-csv"></i> CSV</button>
+                                <button id="btn-export-json" class="btn btn-secondary btn-xs"><i class="fa-solid fa-code"></i> JSON</button>
+                            </div>
+                        </div>
+                        
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="rankings-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Rank</th>
+                                            <th>Candidate</th>
+                                            <th>Match Score</th>
+                                            <th>Exp (Yrs)</th>
+                                            <th>Top Skills</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="rankings-table-body">
+                                        <!-- Javascript filled -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Candidate Deep Analysis Details (Below table, loads dynamic selection) -->
+                    <section id="candidate-details-card" class="glass-panel card-candidate-details hidden">
+                        <div class="card-header">
+                            <h2><i class="fa-solid fa-id-card"></i> Candidate Deep Analysis</h2>
+                            <span class="active-candidate-badge" id="details-header-name">Jane Doe</span>
+                        </div>
+                        
+                        <div class="card-body">
+                            <div class="details-top-meta">
+                                <div class="meta-item">
+                                    <i class="fa-solid fa-envelope"></i> <span id="details-email">jane@doe.com</span>
+                                </div>
+                                <div class="meta-item">
+                                    <i class="fa-solid fa-phone"></i> <span id="details-phone">+123456789</span>
+                                </div>
+                                <div class="meta-item links" id="details-links">
+                                    <!-- Filled dynamically -->
+                                </div>
+                            </div>
+
+                            <hr class="separator">
+
+                            <!-- Visual Scores grid -->
+                            <div class="details-scores-layout">
+                                <!-- Progress Bars -->
+                                <div class="score-bars-list">
+                                    <div class="score-bar-group">
+                                        <div class="bar-label">
+                                            <span>Skills Fit</span>
+                                            <strong id="details-skills-score">0%</strong>
+                                        </div>
+                                        <div class="bar-track">
+                                            <div class="bar-fill bg-teal" id="details-skills-bar" style="width: 0%"></div>
+                                        </div>
+                                        <p class="bar-feedback" id="details-skills-feedback"></p>
+                                    </div>
+
+                                    <div class="score-bar-group">
+                                        <div class="bar-label">
+                                            <span>Experience Fit</span>
+                                            <strong id="details-exp-score">0%</strong>
+                                        </div>
+                                        <div class="bar-track">
+                                            <div class="bar-fill bg-purple" id="details-exp-bar" style="width: 0%"></div>
+                                        </div>
+                                        <p class="bar-feedback" id="details-exp-feedback"></p>
+                                    </div>
+
+                                    <div class="score-bar-group">
+                                        <div class="bar-label">
+                                            <span>Education Fit</span>
+                                            <strong id="details-edu-score">0%</strong>
+                                        </div>
+                                        <div class="bar-track">
+                                            <div class="bar-fill bg-indigo" id="details-edu-bar" style="width: 0%"></div>
+                                        </div>
+                                        <p class="bar-feedback" id="details-edu-feedback"></p>
+                                    </div>
+                                </div>
+
+                                <!-- Radar Chart / Visualization container -->
+                                <div class="chart-container">
+                                    <canvas id="candidateChart"></canvas>
+                                </div>
+                            </div>
+
+                            <hr class="separator">
+
+                            <!-- Structured Qualitative Strengths / Gaps -->
+                            <div class="qualitative-layout">
+                                <div class="qualitative-box strengths-box">
+                                    <h4><i class="fa-solid fa-circle-check text-teal"></i> Key Strengths</h4>
+                                    <ul id="details-strengths-list"></ul>
+                                </div>
+                                <div class="qualitative-box gaps-box">
+                                    <h4><i class="fa-solid fa-circle-xmark text-pink"></i> Gaps & Gaps Identified</h4>
+                                    <ul id="details-gaps-list"></ul>
+                                </div>
+                            </div>
+
+                            <hr class="separator">
+
+                            <!-- Recruiter Verdict -->
+                            <div class="verdict-container">
+                                <h4><i class="fa-solid fa-clipboard-question text-purple"></i> AI Recruiter Verdict</h4>
+                                <blockquote id="details-verdict" class="verdict-text"></blockquote>
+                            </div>
+                        </div>
+                    </section>
+
+                </div>
+
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Toast Notification container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>
